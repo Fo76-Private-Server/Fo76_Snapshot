@@ -9,32 +9,33 @@ namespace Fo76_Snapshot
         private BinaryReader Reader;
         public Snapshot(byte[] Data) {
             this.Reader = new BinaryReader(new MemoryStream(Data));
-            ParseComponents();
+            while(true) {
+                Console.WriteLine(this.Reader.BaseStream.Position.ToString("X") + " ==> " + Data[this.Reader.BaseStream.Position].ToString("X"));
+                ParseComponent();
+            }
         }
 
-        private void ParseComponents() {
+        private void ParseComponent() {
             byte v278 = this.Reader.ReadByte();
             uint v30 = (uint)(v278 >> 6);
             uint v31 = (uint)(((v278 >> 4) & 3) + 1);
             uint v32 = 0;
             uint v33 = 0;
             uint v34 = 0;
-            if(v31 != 3) {
-                v32 = (uint)((v278 & 8) == 1 ? 1 : v32);
+            if(v30 != 3) {
+                v32 = (uint)((v278 & 8) > 0 ? 1 : v32);
                 v32++;
             }
-            if(v31 == 3 || (v278 & 8) != 0) {
+            if(v30 == 3 || v30 != 0) {
                 v33 = 0;
                 v34 = 0;
-                if(v30 != 1) {
-                }
             }
             else {
                 v33 = (((uint)(byte)v278 >> 1) & 3) + 1;
             }
             v34 = 1;
 
-            if((v31 == 3 || (v278 & 8) != 0) && v30 != 1) {
+            if((v30 == 3 || v30 != 0) && v30 != 1) {
                 v34 = 0;
             }
 
@@ -42,6 +43,7 @@ namespace Fo76_Snapshot
             uint Err = 0;
             uint Size = 0;
             uint ComponentSize = 0;
+            bool UseZeroRunLengthCompression = ((v278 & 1) == 0); //v104
 
             int v28 = 0;
             if(v31 != 0) {
@@ -90,12 +92,20 @@ namespace Fo76_Snapshot
                 while (v42 != 0);
             }
 
-            ZeroRunLengthCompression comp = new ZeroRunLengthCompression();
-            byte[] componentBuffer = new byte[ComponentSize];
-            comp.Start(new MemoryStream(componentBuffer), (MemoryStream)this.Reader.BaseStream, componentBuffer.Length);
-            comp.ReadBytes(componentBuffer, componentBuffer.Length);
+            if(UseZeroRunLengthCompression)
+            {
+                ZeroRunLengthCompression comp = new ZeroRunLengthCompression();
+                byte[] componentBuffer = new byte[ComponentSize];
+                comp.Start(new MemoryStream(componentBuffer), (MemoryStream)this.Reader.BaseStream, componentBuffer.Length);
+                comp.ReadBytes(componentBuffer, componentBuffer.Length);
+            }
+            else {
+                byte[] componentBuff = new byte[ComponentSize];
+                this.Reader.Read(componentBuff, 0, componentBuff.Length);
+            }
 
-            Console.WriteLine(this.Reader.ReadByte().ToString("X"));
+            //Console.WriteLine(" v30:"+v30.ToString("X") + " v31:" + v31.ToString("X") + " v32:" + v32.ToString("X") + " v33:" + v33.ToString("X") + " v34:" + v34.ToString("X"));
+            //Console.WriteLine(" Key:" + Key.ToString("X") + " Size:" + Size.ToString("X") + " ComponentSize:" + ComponentSize.ToString("X") + " Err:" + Err.ToString("X"));
         }
     }
 }
