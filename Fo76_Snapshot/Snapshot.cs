@@ -10,12 +10,13 @@ namespace Fo76_Snapshot
         public Snapshot(byte[] Data) {
             this.Reader = new BinaryReader(new MemoryStream(Data));
             while(true) {
-                Console.WriteLine(this.Reader.BaseStream.Position.ToString("X") + " ==> " + Data[this.Reader.BaseStream.Position].ToString("X"));
-                ParseComponent();
+                //Console.WriteLine(this.Reader.BaseStream.Position.ToString("X") + " ==> " + Data[this.Reader.BaseStream.Position].ToString("X"));
+                Component _component = ParseComponent();
+                Console.WriteLine(_component);
             }
         }
 
-        private void ParseComponent() {
+        private Component ParseComponent() {
             byte v278 = this.Reader.ReadByte();
             uint v30 = (uint)(v278 >> 6);
             uint v31 = (uint)(((v278 >> 4) & 3) + 1);
@@ -39,9 +40,9 @@ namespace Fo76_Snapshot
                 v34 = 0;
             }
 
-            uint Key = 0;
-            uint Err = 0;
-            uint Size = 0;
+            uint EntityId = 0;
+            uint ComponentId = 0;
+            uint RessourceId = 0;
             uint ComponentSize = 0;
             bool UseZeroRunLengthCompression = ((v278 & 1) == 0); //v104
 
@@ -49,7 +50,7 @@ namespace Fo76_Snapshot
             if(v31 != 0) {
                 do
                 {
-                    Key |= (uint)(this.Reader.ReadByte() << v28);
+                    EntityId |= (uint)(this.Reader.ReadByte() << v28);
                     v28 += 8;
                     --v31;
                 }
@@ -61,7 +62,7 @@ namespace Fo76_Snapshot
                 uint v37 = v32;
                 do
                 {
-                    Err |= (uint)(this.Reader.ReadByte() << v28);
+                    ComponentId |= (uint)(this.Reader.ReadByte() << v28);
                     v28 += 8;
                     --v37;
                 }
@@ -73,7 +74,7 @@ namespace Fo76_Snapshot
                 uint v40 = v33;
                 do
                 {
-                    Size |= (uint)(this.Reader.ReadByte() << v39);
+                    RessourceId |= (uint)(this.Reader.ReadByte() << v39);
                     v39 += 8;
                     --v40;
                 }
@@ -92,20 +93,23 @@ namespace Fo76_Snapshot
                 while (v42 != 0);
             }
 
-            if(UseZeroRunLengthCompression)
+            byte[] componentBuffer;
+            if (UseZeroRunLengthCompression)
             {
                 ZeroRunLengthCompression comp = new ZeroRunLengthCompression();
-                byte[] componentBuffer = new byte[ComponentSize];
+                componentBuffer = new byte[ComponentSize];
                 comp.Start(new MemoryStream(componentBuffer), (MemoryStream)this.Reader.BaseStream, componentBuffer.Length);
                 comp.ReadBytes(componentBuffer, componentBuffer.Length);
             }
             else {
-                byte[] componentBuff = new byte[ComponentSize];
-                this.Reader.Read(componentBuff, 0, componentBuff.Length);
+                componentBuffer = new byte[ComponentSize];
+                this.Reader.Read(componentBuffer, 0, componentBuffer.Length);
             }
 
             //Console.WriteLine(" v30:"+v30.ToString("X") + " v31:" + v31.ToString("X") + " v32:" + v32.ToString("X") + " v33:" + v33.ToString("X") + " v34:" + v34.ToString("X"));
-            //Console.WriteLine(" Key:" + Key.ToString("X") + " Size:" + Size.ToString("X") + " ComponentSize:" + ComponentSize.ToString("X") + " Err:" + Err.ToString("X"));
+            //Console.WriteLine(" EntityId:" + EntityId.ToString("X") + " RessourceId:" + RessourceId.ToString("X") + " ComponentSize:" + ComponentSize.ToString("X") + " ComponentId:" + ComponentId.ToString("X"));
+
+            return new Component(EntityId, RessourceId, ComponentSize, ComponentId, componentBuffer);
         }
     }
 }
